@@ -1,6 +1,7 @@
 # imapy
 Python library to interact with email services using imap
 
+[![Build Status](https://travis-ci.org/limx0/imapy.svg?branch=master)](https://travis-ci.org/limx0/imapy)
 
 ## Usage
 
