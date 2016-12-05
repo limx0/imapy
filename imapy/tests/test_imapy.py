@@ -41,3 +41,7 @@ class IMAPyTest(TestLogin):
     def test_search_date_from_false(self):
         with self.assertRaises(AssertionError):
             self.mailbox.search_emails(date_from='20160101')
+
+
+if __name__ == '__main__':
+    unittest.main()
