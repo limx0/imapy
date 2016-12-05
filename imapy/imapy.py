@@ -1,25 +1,28 @@
 from __future__ import unicode_literals
 
-import sys
 import datetime
 import imaplib
-from email import message, message_from_string, message_from_bytes
+import smtplib
+from email import message
 
-from imapy.util import str_
-
-PY3 = sys.version_info > (3, 0)
+from imapy.util import str_, message_parser
 
 
 class Mailbox:
-    def __init__(self, username, password, server='imap-mail.outlook.com'):
-        self.imap = imaplib.IMAP4_SSL(server)
-        self.login(username, password)
+    def __init__(self, username, password, imap_server='imap-mail.outlook.com', smtp_server='smtp-mail.outlook.com',
+                 smtp_port=587):
+        self.username = username
+        self.password = password
+        self.imap_server = imap_server
+        self.imap = imaplib.IMAP4_SSL(imap_server)
+        status, data = self.imap.login(username, self.password)
+        if status == 'OK':
+            print('imap login successful')
         self.select_folder('Inbox')
 
-    def login(self, username, password):
-        status, _ = self.imap.login(username, password)
-        if status == 'OK':
-            print("imapy login successful.")
+        self.smtp_server = smtp_server
+        self.smtp_port = smtp_port
+        self.smtp = self._start_smtp()
 
     def select_folder(self, folder='Inbox'):
         self.imap.select(folder)
@@ -42,8 +45,20 @@ class Mailbox:
             args.append('BODY ' + body)
         return self._fetch(self._search(' '.join(args)))
 
-    def get_unread_emails(self):
-        return self.search_emails(unread=True)
+    def send_email(self, to, subject, body):
+        self._start_smtp()
+        msg = ('''From: {email_from}\nSubject: {subject}\n\n{body}'''
+               .format(email_from=self.username, to=to, subject=subject, body=body))
+        return self.smtp.sendmail(self.username, to, msg)
+
+    def _start_smtp(self):
+        try:
+            self.smtp.noop()
+        except (smtplib.SMTPServerDisconnected, AttributeError):
+            self.smtp = smtplib.SMTP(self.smtp_server, self.smtp_port)
+            self.smtp.starttls()
+            self.smtp.login(self.username, self.password)
+            return self.smtp
 
     def _search(self, *args):
         status, data = self.imap.search(None, *args)
@@ -67,7 +82,7 @@ class Mailbox:
 class IMAPyEmail(message.Message):
     def __init__(self, data):
         super().__init__()
-        self.email = self.read_message(data)
+        self.email = message_parser(data)
         self.received_from = self.email['From']
         self.to = self.email['To']
         self.subject = self.email['Subject']
@@ -76,10 +91,6 @@ class IMAPyEmail(message.Message):
         self.html = ''
         self.images = []
         self.process_email()
-
-    @staticmethod
-    def read_message(data):
-        return message_from_bytes(data) if PY3 else message_from_string(data)
 
     def process_email(self):
         if self.email.get_content_maintype() == 'multipart':

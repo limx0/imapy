@@ -1,14 +1,11 @@
 
 
 import unittest
-import os
 import datetime
+import time
 
 from imapy.imapy import Mailbox
-
-
-TEST_ACCOUNT = os.environ['IMAPY_TEST_ACCOUNT']
-TEST_PW = os.environ['IMAPY_TEST_PW']
+from imapy.util import TEST_ACCOUNT, TEST_PW
 
 
 class TestLogin(unittest.TestCase):
@@ -17,9 +14,6 @@ class TestLogin(unittest.TestCase):
 
 class IMAPyTest(TestLogin):
 
-    def test_unread_emails(self):
-        assert self.mailbox.get_unread_emails() == []
-
     def test_search_unread(self):
         assert self.mailbox.search_emails(unread=False)
 
@@ -27,7 +21,7 @@ class IMAPyTest(TestLogin):
         assert self.mailbox.search_emails(subject='test')
 
     def test_search_received_from(self):
-        assert self.mailbox.search_emails(received_from='limx0_imapy')
+        assert self.mailbox.search_emails(received_from=TEST_ACCOUNT)
 
     def test_search_date_from(self):
         assert self.mailbox.search_emails(date_from=datetime.datetime(2016, 12, 4))
@@ -41,6 +35,11 @@ class IMAPyTest(TestLogin):
     def test_search_date_from_false(self):
         with self.assertRaises(AssertionError):
             self.mailbox.search_emails(date_from='20160101')
+
+    def test_send_email(self):
+        assert self.mailbox.send_email(TEST_ACCOUNT, 'TEST_SUBJECT', 'TEST_BODY') == {}
+        time.sleep(10)
+        assert self.mailbox.search_emails(subject='TEST_SUBJECT', body='TEST_BODY')
 
 
 if __name__ == '__main__':
