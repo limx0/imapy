@@ -2,6 +2,7 @@
 import sys
 import imaplib
 import email
+from email.message import Message
 
 PY3 = sys.version_info > (3, 0)
 
@@ -10,10 +11,12 @@ class Mailbox:
     def __init__(self, username, password, server='imap-mail.outlook.com'):
         self.imap = imaplib.IMAP4_SSL(server)
         self.imap.login(username, password)
+        self.select_folder('Inbox')
         self.split_char = b' ' if PY3 else ' '
 
     def login(self, username, password):
         status, _ = self.imap.login(username, password)
+        print(status)
         if status == 'OK':
             print("Login Successful.")
 

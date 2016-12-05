@@ -1,3 +1,9 @@
 
+# Build
 .idea/
+.build/
 *.pyc
+
+# Notebook files
+*.ipynb_checkpoints
+*.ipynb
